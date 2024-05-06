@@ -66,11 +66,11 @@ app.put('/update/:mobile', async (req, res) => {
         }
 
         // here we have to find whether entry made for the day or not
-        
+
 
 
         // Combine existing data with new data
-        
+
         const combinedData = [...user.data];
 
         Object.entries(newData).forEach(([key, value]) => {
@@ -103,6 +103,60 @@ app.get('/:mobile', async (req, res) => {
         res.send({ "data": "user not found" });
     }
 })
+
+// To get all users data with given date 
+app.get('/date/', async (req, res) => {
+    try {
+        const { str } = req.params; // Retrieve date string from URL parameter
+        const date = new Date(decodeURIComponent(str)); // Convert date string to Date object
+
+        // Extract month, day, and year components
+        const month = date.getMonth() // Add 1 to getMonth() result because it returns zero-based month index
+        const day = date.getDate();
+        const year = date.getFullYear();
+
+        // Format the components into a desired date format
+        const formattedDate = `${month}/${day}/${year}`;
+
+        // Send the formatted date as a response
+        res.send(formattedDate);
+    } catch (error) {
+        console.error('Error handling date:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.get("/date/:date(\\d{1,2}/\\d{1,2}/\\d{4})", async (req, res) => {
+    const parts = req.params.date.split('/');
+    const month = parseInt(parts[0], 10);
+    const day = parseInt(parts[1], 10);
+    const year = parseInt(parts[2], 10);
+
+    const queryDate = new Date(year, month - 1, day).toLocaleDateString('en-US', {
+        month: 'numeric',
+        day: 'numeric',
+        year: 'numeric'
+    });
+
+
+    // check for the date 
+    try {
+    const usersData = await User.find({ 'data.key': queryDate });
+    const formattedUserData = usersData.map(user => ({
+              name: user.name,
+             mobile: user.mobile,
+            location: user.data.find(entry => entry.key === queryDate)?.value // Extract location for the given date
+           }));
+         res.json(formattedUserData);
+        } catch(e){
+            console.error('Error fetching users data:', e);
+            res.status(500).json({ error: 'Internal server error' }); 
+        }
+
+});
+
+
+
 
 // for deleting 
 
